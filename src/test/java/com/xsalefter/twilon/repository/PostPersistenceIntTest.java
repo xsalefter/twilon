@@ -36,6 +36,15 @@ public class PostPersistenceIntTest {
         return post;
     }
 
+    private Post newPost(Date date) {
+        Post post = new Post();
+        post.setId(UUID.randomUUID().toString());
+        post.setPostingDate(date);
+        post.setUsername("findbydate");
+        post.setText("find by date");
+        return post;
+    }
+
     @BeforeEach
     void beforeEach() {
         postRepository.deleteAll();
@@ -62,11 +71,30 @@ public class PostPersistenceIntTest {
     }
 
     @Test
-    void whenFindByPostTextThenException() {
+    void whenFindByPostingDateThenOk() {
+        Date postingDate = new Date();
+        postPersistence.save(newPost(postingDate));
+        postPersistence.save(newPost(postingDate));
+        postPersistence.save(newPost("anotheruser", "another text"));
+
+        Slice<PostByUsernamePostingDate> posts = postPersistence.findByPostingDate(postingDate, CassandraPageRequest.first(20));
+
+        assertThat(posts.toList().size()).isEqualTo(2);
+
+        posts.forEach(post -> {
+            assertThat(post.getPrimaryKey()).isNotNull();
+            assertThat(post.getPrimaryKey().getUsername()).isEqualTo("findbydate");
+            assertThat(post.getPrimaryKey().getPostingDate()).isEqualTo(postingDate);
+            assertThat(post.getPost()).isEqualTo("find by date");
+        });
+    }
+
+    @Test
+    void whenFindByPostTextThenUnpredictablePerformanceException() {
         postPersistence.save(newPost("somename", "Hi.. This is my first post"));
 
         assertThatThrownBy(() -> {
-            Slice<Post> posts = postPersistence.findByPostText("Hi.. This is my first post", CassandraPageRequest.first(20));
+            Slice<PostByUsernamePostingDate> posts = postPersistence.findByPostText("Hi.. This is my first post", CassandraPageRequest.first(20));
             assertThat(posts).isNull();
         }).isInstanceOf(CassandraInvalidQueryException.class)
         .hasMessageContaining("might involve data filtering and thus may have unpredictable performance");

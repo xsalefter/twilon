@@ -6,6 +6,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Repository;
 
+import java.util.Date;
+
 /**
  * Aggregate repository operations for {@link com.xsalefter.twilon.entity.post.Post} entity.
  */
@@ -27,10 +29,14 @@ public class PostPersistence {
     }
 
     public Slice<PostByUsernamePostingDate> findByUsername(String username, Pageable page) {
-        return byUsernamePostingDateRepo.findPostByUsername(username, page);
+        return byUsernamePostingDateRepo.findByUsername(username, page);
     }
 
-    public Slice<Post> findByPostText(String text, Pageable pageable) {
-        return postRepo.findByText(text, pageable);
+    public Slice<PostByUsernamePostingDate> findByPostText(String text, Pageable pageable) {
+        return byUsernamePostingDateRepo.findByPost(text, pageable);
+    }
+
+    public Slice<PostByUsernamePostingDate> findByPostingDate(Date postingDate, Pageable pageable) {
+        return byUsernamePostingDateRepo.findByPostingDate(postingDate, pageable);
     }
 }
